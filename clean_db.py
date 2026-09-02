@@ -1,5 +1,5 @@
-import sqlite3
 import os
+import sqlite3
 
 db_path = 'instance/crm_inventory.db'
 

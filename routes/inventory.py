@@ -1,11 +1,22 @@
 import os
-from werkzeug.utils import secure_filename
-from flask import current_app, Blueprint, render_template, request, redirect, url_for, flash, abort, send_file, jsonify
-from flask_login import login_required, current_user
-from models import db, Product, StockAdjustment, ProductVariant
-from decorators import admin_required, admin_or_bodega_required
-import pandas as pd
 from io import BytesIO
+
+import pandas as pd
+from flask import (
+    Blueprint,
+    abort,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_file,
+    url_for,
+)
+from flask_login import current_user, login_required
+from werkzeug.utils import secure_filename
+
+from decorators import admin_or_bodega_required
+from models import Product, ProductVariant, StockAdjustment, db
 
 inventory_bp = Blueprint('inventory_bp', __name__)
 
@@ -100,7 +111,7 @@ def nuevo():
 
             flash('Producto creado exitosamente.', 'success')
             return redirect(url_for('inventory_bp.index'))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Error al intentar guardar el producto en la base de datos.', 'danger')
             
@@ -166,7 +177,7 @@ def editar_producto(id):
             db.session.commit()
             flash('Producto actualizado correctamente en base de datos.', 'success')
             return redirect(url_for('inventory_bp.index'))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Error en la base de datos al actualizar el producto.', 'danger')
 
@@ -202,7 +213,7 @@ def eliminar_producto(id):
     if producto.tipo_inventario != tipo:
         abort(403)
         
-    from models import SaleDetail, Maneo, FacturaBodegaDetalle
+    from models import FacturaBodegaDetalle, Maneo, SaleDetail
     
     # 1. Validación de seguridad en cascada (No eliminar lo que tiene historia financiera/logística)
     if SaleDetail.query.filter_by(product_id=producto.id).first():
@@ -229,7 +240,7 @@ def eliminar_producto(id):
         flash(f'Producto "{nombre}" fue borrado permanentemente del inventario.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Ocurrió un error bloqueante en la base de datos: {str(e)}', 'danger')
+        flash(f'Ocurrió un error bloqueante en la base de datos: {e!s}', 'danger')
         
     return redirect(url_for('inventory_bp.index'))
 
@@ -270,7 +281,7 @@ def agregar_variante(id):
         # Opcionalmente descontar o trackear en Kardex? La instrucción solo dice: "crea la ruta para añadir la subcategoría"
         db.session.commit()
         flash(f'Variante "{nombre_variante}" agregada con éxito.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al agregar la variante.', 'danger')
 
@@ -304,7 +315,7 @@ def editar_variante(id):
     try:
         db.session.commit()
         flash('Variante editada con éxito.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al editar la variante.', 'danger')
         
@@ -329,7 +340,7 @@ def eliminar_variante(id):
         flash(f'La subcategoría "{nombre}" fue borrada exitosamente.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error grave en servidor al eliminar la variante: {str(e)}', 'danger')
+        flash(f'Error grave en servidor al eliminar la variante: {e!s}', 'danger')
         
     return redirect(url_for('inventory_bp.index'))
 
@@ -348,33 +359,35 @@ def descargar_plantilla():
     
     output = BytesIO()
     
-    # Usar XlsxWriter como motor para aplicar estilos profesionales
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Plantilla Tekfix')
-        
-        workbook  = writer.book
-        worksheet = writer.sheets['Plantilla Tekfix']
-        
-        # Formato para el encabezado (Dorado Tekfix)
-        header_format = workbook.add_format({
-            'bold': True,
-            'text_wrap': True,
-            'valign': 'vcenter',
-            'align': 'center',
-            'fg_color': '#DDB856',
-            'font_color': '#1A1818',
-            'border': 1
-        })
-        
-        # Aplicar formato a los encabezados
-        for col_num, value in enumerate(df.columns.values):
-            worksheet.write(0, col_num, value, header_format)
-            # Auto-ajustar ancho de columna (basado en el largo del texto del header o ejemplo)
-            column_len = max(len(str(value)), 15)
-            worksheet.set_column(col_num, col_num, column_len)
+    try:
+        with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+            df.to_excel(writer, index=False, sheet_name='Plantilla Bendito')
+            
+            workbook  = writer.book
+            worksheet = writer.sheets['Plantilla Bendito']
+            
+            # Formato para el encabezado (Lila Bendito Encanto)
+            header_format = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'vcenter',
+                'align': 'center',
+                'fg_color': '#C794C7',
+                'font_color': '#FFFFFF',
+                'border': 1
+            })
+            
+            # Aplicar formato a los encabezados
+            for col_num, value in enumerate(df.columns.values):
+                worksheet.write(0, col_num, value, header_format)
+                column_len = max(len(str(value)), 15)
+                worksheet.set_column(col_num, col_num, column_len)
+    except Exception:
+        output = BytesIO()
+        df.to_excel(output, index=False, sheet_name='Plantilla Bendito')
 
     output.seek(0)
-    return send_file(output, download_name="plantilla_importacion_tekfix.xlsx", as_attachment=True)
+    return send_file(output, download_name="plantilla_importacion_bendito_encanto.xlsx", as_attachment=True)
 
 @inventory_bp.route('/importar', methods=['POST'])
 @login_required
@@ -520,6 +533,6 @@ def importar_inventario():
         
     except Exception as e:
         db.session.rollback()
-        flash(f'Ocurrió un error leyendo las filas de tu archivo: {str(e)}', 'danger')
+        flash(f'Ocurrió un error leyendo las filas de tu archivo: {e!s}', 'danger')
         
     return redirect(url_for('inventory_bp.index'))

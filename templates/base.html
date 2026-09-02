@@ -284,8 +284,35 @@
                 </a>
             </div>
 
-            <!-- Spacer derecho para equilibrar flex -->
-            <div style="width: 40px;"></div>
+            <!-- Cápsula / Indicador del Servidor Zenic (Derecha) -->
+            {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor %}
+                <div>
+                    {% if pago_servidor.estado in ['al_dia', 'pagado'] %}
+                        <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem; background-color: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.4);">
+                            <i class="fa-solid fa-circle-check text-white me-1"></i> Zenic: Al día
+                        </button>
+                    {% elif pago_servidor.estado == 'preventivo' %}
+                        <button type="button" class="btn btn-sm btn-warning text-dark rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-clock me-1"></i> Zenic: {{ pago_servidor.dias_restantes }}d rest.
+                        </button>
+                    {% elif pago_servidor.estado == 'hoy' %}
+                        <button type="button" class="btn btn-sm btn-warning text-dark rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Zenic: Vence Hoy
+                        </button>
+                    {% elif pago_servidor.estado == 'gabela' %}
+                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-triangle-exclamation me-1"></i> Zenic: Gracia ({{ pago_servidor.dias_restantes }}d)
+                        </button>
+                    {% elif pago_servidor.estado == 'vencido' %}
+                        <button type="button" class="btn btn-sm btn-danger rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem;">
+                            <i class="fa-solid fa-circle-exclamation me-1"></i> Zenic: VENCIDO
+                        </button>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Spacer derecho para equilibrar flex -->
+                <div style="width: 40px;"></div>
+            {% endif %}
         </div>
     </nav>
 
@@ -398,6 +425,63 @@
             {% endif %}
         {% endwith %}
 
+        <!-- Banner Compacto de Cobro del Servidor (Exclusivo Administradores) -->
+        {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor and pago_servidor.estado in ['preventivo', 'hoy', 'gabela', 'vencido'] %}
+            {% if pago_servidor.estado == 'preventivo' %}
+                <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between p-3 mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-clock fs-4 text-warning me-3"></i>
+                        <div>
+                            <strong class="d-block text-dark">Próximo vencimiento de Servidor Zenic</strong>
+                            <span class="small text-secondary">Faltan <strong>{{ pago_servidor.dias_restantes }} días</strong> para el vencimiento de la mensualidad de <strong>{{ pago_servidor.mes_nombre }} {{ pago_servidor.anio }}</strong> ({{ pago_servidor.valor_fmt }}).</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-warning fw-bold text-dark rounded-pill px-3 ms-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPagoServidor">
+                        <i class="fa-solid fa-credit-card me-1"></i> Pagar Ahora
+                    </button>
+                </div>
+            {% elif pago_servidor.estado == 'hoy' %}
+                <div class="alert alert-warning border-warning shadow-sm rounded-3 d-flex align-items-center justify-content-between p-3 mb-4" style="background-color: #fff8e6;">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-bell fs-4 text-warning me-3"></i>
+                        <div>
+                            <strong class="d-block text-dark">¡Hoy es el día de pago del Servidor!</strong>
+                            <span class="small text-secondary">Hoy vence el cobro de la mensualidad del servidor correspondiente a <strong>{{ pago_servidor.mes_nombre }} {{ pago_servidor.anio }}</strong> ({{ pago_servidor.valor_fmt }}).</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-warning fw-bold text-dark rounded-pill px-3 ms-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPagoServidor">
+                        <i class="fa-solid fa-credit-card me-1"></i> Reportar Pago
+                    </button>
+                </div>
+            {% elif pago_servidor.estado == 'gabela' %}
+                <div class="alert alert-danger border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between p-3 mb-4" style="background-color: #fff3f3; border-left: 4px solid #dc3545 !important;">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-hourglass-half fs-4 text-danger me-3"></i>
+                        <div>
+                            <strong class="d-block text-danger">Período de Gracia de Servidor Activo (Tolerancia: {{ pago_servidor.dias_restantes }} día(s) restante(s))</strong>
+                            <span class="small text-secondary">La mensualidad de <strong>{{ pago_servidor.mes_nombre }} {{ pago_servidor.anio }}</strong> por <strong>{{ pago_servidor.valor_fmt }}</strong> no se ha registrado. Por favor realiza la transferencia para evitar interrupción del servicio.</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger fw-bold rounded-pill px-3 ms-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPagoServidor">
+                        <i class="fa-solid fa-credit-card me-1"></i> Pagar / Notificar
+                    </button>
+                </div>
+            {% elif pago_servidor.estado == 'vencido' %}
+                <div class="alert alert-danger border-danger shadow-sm rounded-3 d-flex align-items-center justify-content-between p-3 mb-4">
+                    <div class="d-flex align-items-center">
+                        <i class="fa-solid fa-triangle-exclamation fs-3 text-danger me-3"></i>
+                        <div>
+                            <strong class="d-block text-danger">¡SERVICIO VENCIDO - ACCIÓN REQUERIDA!</strong>
+                            <span class="small text-secondary">El pago del servidor del mes de <strong>{{ pago_servidor.mes_nombre }} {{ pago_servidor.anio }}</strong> ({{ pago_servidor.valor_fmt }}) está vencido por {{ pago_servidor.dias_restantes }} días.</span>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-danger fw-bold rounded-pill px-3 ms-2 text-nowrap" data-bs-toggle="modal" data-bs-target="#modalPagoServidor">
+                        <i class="fa-solid fa-credit-card me-1"></i> Pagar Inmediatamente
+                    </button>
+                </div>
+            {% endif %}
+        {% endif %}
+
         {% block content %}{% endblock %}
     </main>
 
@@ -437,6 +521,67 @@
             });
         });
     </script>
+    {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor %}
+    <!-- Modal de Pago Mensual de Servidor (Zenic) -->
+    <div class="modal fade" id="modalPagoServidor" tabindex="-1" aria-labelledby="modalPagoServidorLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4">
+                <div class="modal-header border-0 pb-0 text-center d-block position-relative">
+                    <button type="button" class="btn-close position-absolute end-0 top-0 m-3 shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div class="mx-auto bg-light rounded-circle d-flex align-items-center justify-content-center mb-2" style="width: 60px; height: 60px;">
+                        <i class="fa-solid fa-server text-primary fs-3"></i>
+                    </div>
+                    <h4 class="modal-title fw-bold text-dark" id="modalPagoServidorLabel">Servidor Zenic</h4>
+                    <p class="text-muted small mb-0">Mensualidad {{ pago_servidor.mes_nombre }} {{ pago_servidor.anio }}</p>
+                </div>
+                <div class="modal-body p-4">
+                    <!-- Tarjeta Destacada del Valor -->
+                    <div class="card bg-primary text-white border-0 rounded-4 p-3 text-center mb-4 shadow-sm" style="background: linear-gradient(135deg, var(--tekfix-primary, #C794C7), #8e44ad) !important;">
+                        <span class="small text-white-50 text-uppercase fw-bold">Valor a Cancelar</span>
+                        <h2 class="display-6 fw-bold text-white my-1">{{ pago_servidor.valor_fmt }}</h2>
+                        <span class="badge bg-white text-dark mx-auto px-3 py-1 rounded-pill fw-semibold mt-1">
+                            Vencimiento: Día 30 de cada mes
+                        </span>
+                    </div>
+
+                    <!-- Métodos de Pago / Transferencia -->
+                    <h6 class="fw-bold text-dark mb-3"><i class="fa-solid fa-wallet text-primary me-2"></i>Cuentas para Transferencia:</h6>
+                    <div class="row g-2 mb-4">
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-3 text-center border h-100">
+                                <div class="fw-bold text-primary mb-1">
+                                    <i class="fa-solid fa-university me-1"></i> Nu Bank
+                                </div>
+                                <div class="fs-5 fw-bold text-dark">{{ pago_servidor.nu_tag }}</div>
+                                <span class="text-muted" style="font-size: 0.75rem;">Llave Transfiya / Tag Nu</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="p-3 bg-light rounded-3 text-center border h-100">
+                                <div class="fw-bold text-danger mb-1">
+                                    <i class="fa-solid fa-mobile-screen me-1"></i> Nequi
+                                </div>
+                                <div class="fs-5 fw-bold text-dark">{{ pago_servidor.nequi }}</div>
+                                <span class="text-muted" style="font-size: 0.75rem;">Cuenta Nequi Directa</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Enlace de Notificación / Aprobación por WhatsApp -->
+                    <div class="d-grid gap-2">
+                        <a href="{{ pago_servidor.whatsapp_url }}" target="_blank" class="btn btn-success btn-lg rounded-pill fw-bold shadow-sm d-flex align-items-center justify-content-center">
+                            <i class="fa-brands fa-whatsapp fs-4 me-2"></i> Reportar Pago por WhatsApp
+                        </a>
+                        <small class="text-muted text-center" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-shield-halved me-1"></i> El mensaje incluye un enlace seguro de aprobación de 1-clic para registrar el pago automáticamente.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     {% block scripts %}{% endblock %}
 </body>
 </html>

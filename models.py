@@ -1,8 +1,9 @@
 # Rescan - Modulo Cartera POS v1.0
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import UserMixin
 from datetime import datetime
+
 import pytz
+from flask_login import UserMixin
+from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
@@ -403,6 +404,13 @@ class SaldoImportacion(db.Model):
     saldo_actual = db.Column(db.Numeric(14, 2), nullable=False, default=0.00)
     ultima_actualizacion = db.Column(db.DateTime, default=obtener_hora_bogota)
 
+    def __init__(self, saldo_actual=0.00, ultima_actualizacion=None, **kwargs):
+        super().__init__(**kwargs)
+        if saldo_actual is not None:
+            self.saldo_actual = saldo_actual
+        if ultima_actualizacion is not None:
+            self.ultima_actualizacion = ultima_actualizacion
+
     @classmethod
     def obtener(cls):
         """Retorna el registro único, creándolo si no existe."""
@@ -526,3 +534,29 @@ class MovimientoCajaCartera(db.Model):
     concepto = db.Column(db.String(255), nullable=False)
     fecha_movimiento = db.Column(db.DateTime, default=obtener_hora_bogota)
     abono_id = db.Column(db.Integer, db.ForeignKey('abono_credito.id'), nullable=False)
+
+class ServerPayment(db.Model):
+    """Modelo para registrar el historial y estado del pago mensual del servidor (Zenic)."""
+    __tablename__ = 'server_payments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    anio = db.Column(db.Integer, nullable=False)
+    mes = db.Column(db.Integer, nullable=False)
+    estado = db.Column(db.String(20), nullable=False, default='pendiente') # 'pendiente' | 'pagado'
+    fecha_pago = db.Column(db.DateTime, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint('anio', 'mes', name='uq_server_payment_anio_mes'),
+    )
+
+    def __init__(self, anio=None, mes=None, estado='pendiente', fecha_pago=None, **kwargs):
+        super().__init__(**kwargs)
+        if anio is not None:
+            self.anio = anio
+        if mes is not None:
+            self.mes = mes
+        if estado is not None:
+            self.estado = estado
+        if fecha_pago is not None:
+            self.fecha_pago = fecha_pago
+

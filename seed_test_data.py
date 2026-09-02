@@ -1,9 +1,32 @@
-import os
-from app import create_app
-from models import db, User, Product, ProductVariant, Loss, Sale, SalePayment, SaleDetail, StockAdjustment, ArqueoCaja, Maneo, Expense, Cliente, FacturaBodega, FacturaBodegaDetalle, AbonoBodega, Provider, ProviderInvoice, ProviderPayment, Warranty
-from werkzeug.security import generate_password_hash
-from datetime import datetime, timedelta
+from datetime import datetime
+
 import pytz
+from werkzeug.security import generate_password_hash
+
+from app import create_app
+from models import (
+    AbonoBodega,
+    ArqueoCaja,
+    Cliente,
+    Expense,
+    FacturaBodega,
+    FacturaBodegaDetalle,
+    Loss,
+    Maneo,
+    Product,
+    ProductVariant,
+    Provider,
+    ProviderInvoice,
+    ProviderPayment,
+    Sale,
+    SaleDetail,
+    SalePayment,
+    StockAdjustment,
+    User,
+    Warranty,
+    db,
+)
+
 
 def obtener_hora_bogota():
     return datetime.now(pytz.timezone('America/Bogota')).replace(tzinfo=None)
@@ -15,9 +38,9 @@ def seed_test_data():
         
         # 1. Crear Usuarios de Prueba si no existen
         roles = [
-            {'email': 'vendedor@tekfix', 'nombre': 'Vendedor Oficial', 'rol': 'vendedor', 'pass': 'Tekfix1234'},
-            {'email': 'bodega@tekfix', 'nombre': 'Encargado Bodega', 'rol': 'bodega', 'pass': 'Tekfix1234'},
-            {'email': 'admin@tekfix', 'nombre': 'Administrador General', 'rol': 'admin', 'pass': 'Tekfix2026*'}
+            {'email': 'vendedor@bendito.com', 'nombre': 'Vendedor Oficial', 'rol': 'vendedor', 'pass': 'Bendito1234'},
+            {'email': 'bodega@bendito.com', 'nombre': 'Encargado Bodega', 'rol': 'bodega', 'pass': 'Bendito1234'},
+            {'email': 'admin@bendito.com', 'nombre': 'Administrador General', 'rol': 'admin', 'pass': 'Bendito2026*'}
         ]
         test_users = {}
         for r in roles:

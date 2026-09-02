@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required
-from models import db, Provider, ProviderInvoice, ProviderPayment, obtener_hora_bogota
-from decorators import admin_required
-from werkzeug.utils import secure_filename
 import os
 import time
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import login_required
+
+from decorators import admin_required
+from models import Provider, ProviderInvoice, ProviderPayment, db
 
 providers_bp = Blueprint('providers_bp', __name__)
 
@@ -72,7 +73,7 @@ def cuenta(id):
 @login_required
 @admin_required
 def registrar_factura(id):
-    proveedor = Provider.query.get_or_404(id)
+    Provider.query.get_or_404(id)
     
     monto_total = float(request.form.get('monto_total', '0').replace(',', ''))
     numero_factura = request.form.get('numero_factura')
@@ -141,6 +142,6 @@ def eliminar_proveedor(id):
         flash(f'Proveedor "{nombre}" y todo su historial eliminados correctamente.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al intentar eliminar el proveedor: {str(e)}', 'danger')
+        flash(f'Error al intentar eliminar el proveedor: {e!s}', 'danger')
         
     return redirect(url_for('providers_bp.index'))

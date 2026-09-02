@@ -1,10 +1,26 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
-from models import db, ClienteCartera, FacturaCredito, DetalleFacturaCredito, AbonoCredito, AcuerdoPago, MovimientoCajaCartera, Product, ProductVariant, Sale, SaleDetail, SalePayment, obtener_hora_bogota
-from decorators import admin_required
 from datetime import datetime
 from decimal import Decimal
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 from sqlalchemy import or_
+
+from decorators import admin_required
+from models import (
+    AbonoCredito,
+    AcuerdoPago,
+    ClienteCartera,
+    DetalleFacturaCredito,
+    FacturaCredito,
+    MovimientoCajaCartera,
+    Product,
+    ProductVariant,
+    Sale,
+    SaleDetail,
+    SalePayment,
+    db,
+    obtener_hora_bogota,
+)
 
 clientes_bp = Blueprint('clientes_bp', __name__)
 
@@ -261,7 +277,7 @@ def registrar_abono():
         flash('Abono registrado e ingresado a caja.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al registrar abono: {str(e)}', 'danger')
+        flash(f'Error al registrar abono: {e!s}', 'danger')
         
     return redirect(url_for('clientes_bp.perfil', id=factura.cliente_id))
 
@@ -282,7 +298,7 @@ def eliminar_abono(id):
         flash('Abono eliminado y saldo reversado.', 'info')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar abono: {str(e)}', 'danger')
+        flash(f'Error al eliminar abono: {e!s}', 'danger')
         
     return redirect(url_for('clientes_bp.perfil', id=cliente_id))
 
@@ -347,7 +363,7 @@ def eliminar_cliente(id):
         flash(f'Cliente {cliente.nombre_completo} y todos sus registros eliminados.', 'info')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar cliente: {str(e)}', 'danger')
+        flash(f'Error al eliminar cliente: {e!s}', 'danger')
         
     return redirect(url_for('clientes_bp.index'))
 
@@ -374,7 +390,7 @@ def eliminar_factura(id):
         flash(f'Factura #{id} eliminada y stock devuelto.', 'info')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error al eliminar factura: {str(e)}', 'danger')
+        flash(f'Error al eliminar factura: {e!s}', 'danger')
         
     return redirect(url_for('clientes_bp.perfil', id=cliente_id))
 

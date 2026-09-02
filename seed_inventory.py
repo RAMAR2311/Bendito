@@ -1,7 +1,9 @@
 import csv
 import sys
+
 from app import create_app
-from models import db, Product
+from models import Product, db
+
 
 def seed_inventory_from_csv(csv_filepath='inventario.csv'):
     app = create_app()
@@ -16,13 +18,13 @@ def seed_inventory_from_csv(csv_filepath='inventario.csv'):
                 for row in reader:
                     fila_actual += 1
                     try:
-                        item = dict(
-                            nombre=row['nombre'].strip(),
-                            sku=row['sku'].strip(),
-                            cantidad_stock=int(row['cantidad_stock'].strip()),
-                            precio_minimo=float(row['precio_minimo'].strip()),
-                            precio_sugerido=float(row['precio_sugerido'].strip())
-                        )
+                        item = {
+                            'nombre': row['nombre'].strip(),
+                            'sku': row['sku'].strip(),
+                            'cantidad_stock': int(row['cantidad_stock'].strip()),
+                            'precio_minimo': float(row['precio_minimo'].strip()),
+                            'precio_sugerido': float(row['precio_sugerido'].strip())
+                        }
                         productos_a_insertar.append(item)
                         
                     except (KeyError, ValueError) as format_error:

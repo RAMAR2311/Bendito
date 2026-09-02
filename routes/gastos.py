@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from models import db, Expense, obtener_hora_bogota
-from decorators import admin_required
-from sqlalchemy import extract
 from datetime import datetime
+
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy import extract
+
+from models import Expense, db, obtener_hora_bogota
 
 gastos_bp = Blueprint('gastos_bp', __name__)
 
@@ -44,7 +45,7 @@ def index():
             db.session.add(nuevo_gasto)
             db.session.commit()
             flash('Gasto registrado exitosamente.', 'success')
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Error al intentar registrar el gasto en la base de datos.', 'danger')
         
@@ -68,8 +69,8 @@ def index():
         
     gastos_mes = query.order_by(Expense.fecha_gasto.desc()).all()
 
-    total_diarios = sum((g.monto for g in gastos_mes if g.tipo_gasto == 'Gasto Diario'))
-    total_indirectos = sum((g.monto for g in gastos_mes if g.tipo_gasto == 'Costo Indirecto'))
+    total_diarios = sum(g.monto for g in gastos_mes if g.tipo_gasto == 'Gasto Diario')
+    total_indirectos = sum(g.monto for g in gastos_mes if g.tipo_gasto == 'Costo Indirecto')
 
     # Provide today's date formatted for HTML5 <input type="date">
     hoy_str = ahora.strftime('%Y-%m-%d')
@@ -89,7 +90,7 @@ def eliminar_gasto(id):
         db.session.delete(gasto)
         db.session.commit()
         flash('Gasto eliminado correctamente.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al intentar eliminar el gasto.', 'danger')
         

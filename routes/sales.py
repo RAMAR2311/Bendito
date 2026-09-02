@@ -1,11 +1,23 @@
-from flask import Blueprint, request, jsonify, flash, redirect, render_template, abort, url_for
-from flask_login import login_required, current_user
-from models import db, Product, ProductVariant, Sale, SaleDetail, SalePayment, Expense, DynamicKey, ProductExchange, obtener_hora_bogota
-from decorators import admin_required
-from decimal import Decimal
 from datetime import datetime, timedelta
-from sqlalchemy import or_, cast, String, func
+from decimal import Decimal
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+from sqlalchemy import String, cast, func, or_
 from sqlalchemy.orm import joinedload
+
+from decorators import admin_required
+from models import (
+    Expense,
+    Product,
+    ProductExchange,
+    ProductVariant,
+    Sale,
+    SaleDetail,
+    SalePayment,
+    db,
+    obtener_hora_bogota,
+)
 
 sales_bp = Blueprint('sales_bp', __name__)
 
@@ -122,12 +134,10 @@ def procesar_venta():
                     if cantidad_vendida > variante.cantidad_stock:
                         raise ValueError(f"Stock insuficiente para la variante '{variante.nombre_variante}' de '{producto.nombre}'. Solicitado: {cantidad_vendida}, Disponible: {variante.cantidad_stock}.")
                     variante.cantidad_stock -= cantidad_vendida
-                    precio_limite_autorizado = variante.precio_costo if current_user.rol == 'admin' else variante.precio_minimo
                 else:
                     if cantidad_vendida > producto.cantidad_stock:
                         raise ValueError(f"Stock insuficiente para el producto '{producto.nombre}'. Solicitado: {cantidad_vendida}, Disponible: {producto.cantidad_stock}.")
                     producto.cantidad_stock -= cantidad_vendida
-                    precio_limite_autorizado = producto.precio_costo if current_user.rol == 'admin' else producto.precio_minimo
 
 
                 detalle = SaleDetail(
@@ -183,7 +193,7 @@ def procesar_venta():
         db.session.rollback()
         return jsonify({'error': str(val_err)}), 400
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         return jsonify({'error': 'Ocurrió un error interno al procesar la venta.'}), 500
 
@@ -244,13 +254,13 @@ def historial():
     
     # Auditar y cruzar sumatorios de métricas de pago
     # Sistema híbrido: usa SalePayment si existe, caso contrario cae al metodo_pago legacy
-    total_efectivo = Decimal('0')
-    total_nequi = Decimal('0')
-    total_bancolombia = Decimal('0')
-    total_daviplata = Decimal('0')
-    total_tarjeta = Decimal('0')
-    total_credito = Decimal('0')
-    total_transferencia_legacy = Decimal('0')
+    total_efectivo = Decimal(0)
+    total_nequi = Decimal(0)
+    total_bancolombia = Decimal(0)
+    total_daviplata = Decimal(0)
+    total_tarjeta = Decimal(0)
+    total_credito = Decimal(0)
+    total_transferencia_legacy = Decimal(0)
     total_mixto = 0  # Contador de ventas con pago mixto
 
     for v in ventas:
@@ -327,7 +337,7 @@ def eliminar_venta(sale_id):
         db.session.commit()
         flash('Venta anulada y stock devuelto exitosamente.', 'success')
         
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Ocurrió un error al anular la venta.', 'danger')
         
@@ -375,7 +385,7 @@ def pos_visual():
             if len(primera_palabra) > 2:
                 categorias_set.add(primera_palabra)
                 
-    categorias = sorted(list(categorias_set))
+    categorias = sorted(categorias_set)
     
     # Pre-estructurar los datos para enviarlos fácilmente como JSON al frontend
     productos_data = []

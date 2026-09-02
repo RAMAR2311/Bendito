@@ -1,8 +1,18 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
-from flask_login import login_required
-from models import db, Provider, Importacion, SaldoImportacion, Sale, SaleDetail, Product, obtener_hora_bogota
-from decorators import admin_required
 from decimal import Decimal
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import login_required
+
+from decorators import admin_required
+from models import (
+    Importacion,
+    Product,
+    Provider,
+    SaldoImportacion,
+    SaleDetail,
+    db,
+    obtener_hora_bogota,
+)
 
 importaciones_bp = Blueprint('importaciones_bp', __name__)
 
@@ -16,7 +26,7 @@ def _calcular_ganancia_ventas():
     for row in detalles:
         det = row.SaleDetail
         prod = row.Product
-        costo = det.precio_costo_manual if det.precio_costo_manual else (prod.precio_costo or Decimal('0'))
+        costo = det.precio_costo_manual if det.precio_costo_manual else (prod.precio_costo or Decimal(0))
         ganancia += (Decimal(str(det.precio_venta_final)) - Decimal(str(costo))) * det.cantidad_vendida
     return ganancia
 

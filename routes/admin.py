@@ -1,12 +1,33 @@
-from flask import Blueprint, render_template, abort, request, redirect, url_for, flash, jsonify
-from flask_login import login_required, current_user
-from models import db, Product, ProductVariant, Sale, User, Maneo, SaleDetail, SalePayment, StockAdjustment, Expense, Loss, Provider, ProviderInvoice, ProviderPayment, Warranty, DynamicKey, Importacion, ClienteCartera, FacturaCredito, AbonoCredito, obtener_hora_bogota
+import random
+import string
+from datetime import timedelta
+from decimal import Decimal
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
 from sqlalchemy.sql import func
 from werkzeug.security import generate_password_hash
-from decimal import Decimal
+
 from decorators import admin_required
-import string, random
-from datetime import timedelta
+from models import (
+    ClienteCartera,
+    DynamicKey,
+    Expense,
+    FacturaCredito,
+    Importacion,
+    Loss,
+    Maneo,
+    Product,
+    ProductVariant,
+    Sale,
+    SaleDetail,
+    SalePayment,
+    StockAdjustment,
+    User,
+    Warranty,
+    db,
+    obtener_hora_bogota,
+)
 
 admin_bp = Blueprint('admin_bp', __name__)
 
@@ -58,7 +79,7 @@ def vendedores():
                 db.session.add(nuevo_vendedor)
                 db.session.commit()
                 flash(f"¡Vendedor '{nombre}' registrado y autorizado para Cajas!", "success")
-            except Exception as e:
+            except Exception:
                 db.session.rollback()
                 flash('Ocurrió un error en la base de datos al intentar registrar al vendedor.', 'danger')
             
@@ -79,10 +100,9 @@ def editar_vendedor(id):
     password = request.form.get('password')
     
     # Validar email único si cambió
-    if email != vendedor.email:
-        if User.query.filter_by(email=email).first():
-            flash('Error: El nuevo correo ya está en uso por otro usuario.', 'danger')
-            return redirect(url_for('admin_bp.vendedores'))
+    if email != vendedor.email and User.query.filter_by(email=email).first():
+        flash('Error: El nuevo correo ya está en uso por otro usuario.', 'danger')
+        return redirect(url_for('admin_bp.vendedores'))
  
     vendedor.nombre = nombre.strip()
     vendedor.email = email.strip()
@@ -94,7 +114,7 @@ def editar_vendedor(id):
     try:
         db.session.commit()
         flash(f'Vendedor "{nombre}" actualizado correctamente.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al actualizar el vendedor.', 'danger')
         
@@ -116,7 +136,7 @@ def eliminar_vendedor(id):
         db.session.delete(vendedor)
         db.session.commit()
         flash(f'Vendedor "{nombre}" eliminado con éxito.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error: No se pudo eliminar el vendedor (puede tener ventas u operaciones registradas).', 'danger')
         
@@ -249,7 +269,7 @@ def registrar_perdida():
         
         db.session.commit()
         flash(f'Pérdida por {cantidad} unidades registrada con éxito. Inventario deducido.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('No se pudo registrar la pérdida por un error interno.', 'danger')
         
@@ -330,7 +350,7 @@ def maneos_prestar():
 
         db.session.commit()
         flash('Maneo registrado y stock descontado exitosamente.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al registrar el maneo. Transacción revertida.', 'danger')
 
@@ -431,7 +451,7 @@ def maneos_facturar(id):
             flash(f'Maneo facturado parcialmente. Se registró la venta de ${precio_venta * cantidad_vendida} y se devolvieron {cantidad_no_vendida} uds al inventario.', 'success')
         else:
             flash(f'Maneo facturado totalmente. Se registró la venta de ${precio_venta * cantidad_vendida} en la caja.', 'success')
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al facturar el maneo.', 'danger')
 
@@ -492,7 +512,7 @@ def maneos_devolver(id):
             db.session.commit()
             flash(f'Devolución parcial registrada. Se devolvieron {cantidad_devuelta} uds al inventario. Quedan {unidades_restantes} uds pendientes de cobrar.', 'info')
 
-    except Exception as e:
+    except Exception:
         db.session.rollback()
         flash('Error al procesar la devolución.', 'danger')
 

@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from models import db, Sale, SalePayment, ArqueoCaja, Expense
-from decorators import admin_required
-from datetime import datetime, date
+from datetime import datetime
 from decimal import Decimal
+
 import pytz
+from flask import Blueprint, flash, redirect, render_template, request, url_for
+from flask_login import current_user, login_required
+
+from models import ArqueoCaja, Expense, Sale, db
 
 arqueo_bp = Blueprint('arqueo_bp', __name__)
 
@@ -14,8 +15,8 @@ def obtener_hora_bogota():
 def calcular_totales_dia(ventas_del_dia):
     """Calcula los totales de efectivo y transferencias del día.
     Usa SalePayment si está disponible, de lo contrario usa metodo_pago legacy."""
-    total_efectivo = Decimal('0')
-    total_transferencia = Decimal('0')
+    total_efectivo = Decimal(0)
+    total_transferencia = Decimal(0)
     
     for v in ventas_del_dia:
         if v.pagos:  # Ventas nuevas con tabla sale_payments
@@ -84,7 +85,7 @@ def nuevo():
             db.session.commit()
             flash('Arqueo de caja guardado exitosamente.', 'success')
             return redirect(url_for('arqueo_bp.reporte', fecha_inicio=fecha_str, fecha_fin=fecha_str))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Ocurrió un error al guardar el arqueo de caja.', 'danger')
 

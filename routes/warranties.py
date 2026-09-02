@@ -1,8 +1,10 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from datetime import timedelta
+
+from flask import Blueprint, flash, jsonify, redirect, render_template, request, url_for
 from flask_login import login_required
-from models import db, Sale, SaleDetail, Warranty, Product, obtener_hora_bogota
+
 from decorators import admin_required
-from datetime import datetime, timedelta
+from models import Sale, Warranty, db, obtener_hora_bogota
 
 warranties_bp = Blueprint('warranties_bp', __name__)
 

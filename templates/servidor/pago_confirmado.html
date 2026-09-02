@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Confirmación de Pago - Servidor Zenic</title>
+    <!-- Bootstrap 5 CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .confirmation-card {
+            background: #ffffff;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            max-width: 480px;
+            width: 100%;
+            padding: 2.5rem 2rem;
+            text-align: center;
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+        }
+        .icon-circle.success {
+            background-color: #d4edda;
+            color: #198754;
+        }
+        .icon-circle.error {
+            background-color: #f8d7da;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="confirmation-card">
+        {% if exito %}
+            <div class="icon-circle success">
+                <i class="fa-solid fa-circle-check fa-3x"></i>
+            </div>
+            <h3 class="fw-bold text-dark mb-2">¡Pago Registrado Exitosamente!</h3>
+            <p class="text-muted mb-4">
+                El pago de la mensualidad del servidor correspondiente a <strong class="text-dark">{{ mes_nombre }} {{ anio }}</strong> ($70.000 COP) ha sido marcado como <span class="badge bg-success">PAGADO</span> en el sistema Zenic.
+            </p>
+            <div class="p-3 bg-light rounded-3 mb-4 text-start">
+                <div class="d-flex align-items-center text-secondary small mb-1">
+                    <i class="fa-solid fa-server me-2 text-primary"></i> Servidor: <strong>Bendito Encanto</strong>
+                </div>
+                <div class="d-flex align-items-center text-secondary small">
+                    <i class="fa-solid fa-check-double me-2 text-success"></i> Estado: <strong>Al día</strong>
+                </div>
+            </div>
+            <a href="/" class="btn btn-primary px-4 py-2 rounded-pill fw-semibold shadow-sm">
+                <i class="fa-solid fa-house me-2"></i> Ir al Inicio
+            </a>
+        {% else %}
+            <div class="icon-circle error">
+                <i class="fa-solid fa-triangle-exclamation fa-3x"></i>
+            </div>
+            <h3 class="fw-bold text-dark mb-2">No se pudo procesar la confirmación</h3>
+            <p class="text-muted mb-4">
+                {{ error or 'El enlace utilizado es inválido o no contiene los parámetros necesarios.' }}
+            </p>
+            <a href="/" class="btn btn-outline-secondary px-4 py-2 rounded-pill fw-semibold">
+                <i class="fa-solid fa-arrow-left me-2"></i> Regresar a la Aplicación
+            </a>
+        {% endif %}
+    </div>
+
+</body>
+</html>
