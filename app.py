@@ -17,9 +17,12 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost/benditoencanto')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+    app.config['VALOR_MENSUALIDAD_SERVIDOR'] = os.getenv('VALOR_MENSUALIDAD_SERVIDOR', '70.000')
+    app.config['PIN_CONFIRMACION_SERVIDOR'] = os.getenv('PIN_CONFIRMACION_SERVIDOR', '9876')
+
     db.init_app(app)
     Migrate(app, db)
-    CSRFProtect(app)
+    csrf = CSRFProtect(app)
     
     login_manager = LoginManager()
     login_manager.login_view = 'auth_bp.login'
@@ -71,15 +74,12 @@ def create_app():
             import calendar
             from datetime import date
             from urllib.parse import quote
-
             from itsdangerous import URLSafeTimedSerializer
-
             from models import ServerPayment
 
-            VALOR_MENSUALIDAD = 70000
-            VALOR_FMT = "$70.000 COP"
-            DIA_VENCIMIENTO = 30
-            TELEFONO_ZENIC = "573115643557"
+            monto_val = app.config.get('VALOR_MENSUALIDAD_SERVIDOR', '70.000')
+            valor_fmt = f"${monto_val} COP"
+            
             MESES = [
                 "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
                 "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -104,41 +104,41 @@ def create_app():
 
             pago = ServerPayment.query.filter_by(anio=target_anio, mes=target_mes).first()
 
+            dias_gabela = 0
             if pago and pago.estado == 'pagado':
-                estado = 'al_dia'
+                estado = 'pagado'
                 dias_restantes = 0
-                mensaje_estado = "Al día"
             else:
                 _, max_dias_mes = calendar.monthrange(target_anio, target_mes)
-                max_dia = min(DIA_VENCIMIENTO, max_dias_mes)
+                max_dia = min(30, max_dias_mes)
                 fecha_venc = date(target_anio, target_mes, max_dia)
                 diff_days = (hoy - fecha_venc).days
 
                 if diff_days > 5:
                     estado = 'vencido'
                     dias_restantes = diff_days
-                    mensaje_estado = f"Vencido por {diff_days} días"
+                    dias_gabela = 0
                 elif 1 <= diff_days <= 5:
                     estado = 'gabela'
-                    dias_restantes = 5 - (diff_days - 1)
-                    mensaje_estado = f"Período de gracia: {dias_restantes} día(s) restante(s)"
+                    dias_gabela = 5 - diff_days + 1
+                    dias_restantes = dias_gabela
                 elif diff_days == 0:
                     estado = 'hoy'
                     dias_restantes = 0
-                    mensaje_estado = "Hoy vence la mensualidad del servidor"
+                    dias_gabela = 5
                 else:
                     dias_faltantes = abs(diff_days)
                     if dias_faltantes <= 8:
                         estado = 'preventivo'
                         dias_restantes = dias_faltantes
-                        mensaje_estado = f"Vence en {dias_faltantes} día(s)"
+                        dias_gabela = 5
                     else:
                         estado = 'al_dia'
                         dias_restantes = dias_faltantes
-                        mensaje_estado = "Al día"
+                        dias_gabela = 5
 
             s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
-            token = s.dumps({'anio': target_anio, 'mes': target_mes}, salt='servidor-pago-salt')
+            token = s.dumps({'anio': target_anio, 'mes': target_mes}, salt='server-payment-salt')
             
             try:
                 base_url = request.host_url.rstrip('/')
@@ -149,63 +149,100 @@ def create_app():
 
             nombre_mes = MESES[target_mes] if 1 <= target_mes <= 12 else str(target_mes)
             whatsapp_msg = (
-                f"Hola Zenic, adjunto la aprobación del pago de la mensualidad del servidor "
-                f"correspondiente a {nombre_mes} {target_anio} por {VALOR_FMT}.\n\n"
-                f"Confirmar pago con 1-clic aquí:\n{approval_url}"
+                f"Hola, adjunto el comprobante de pago de la mensualidad del servidor Zenic ({valor_fmt}) para {target_anio}.\n\n"
+                f"Para confirmar mi pago en el sistema con 1 solo clic, toca aquí:\n{approval_url}"
             )
-            whatsapp_url = f"https://wa.me/{TELEFONO_ZENIC}?text={quote(whatsapp_msg)}"
+            whatsapp_url = f"https://wa.me/573115643557?text={quote(whatsapp_msg)}"
 
             pago_servidor = {
                 'estado': estado,
-                'dias_restantes': dias_restantes,
-                'mensaje_estado': mensaje_estado,
-                'valor_fmt': VALOR_FMT,
-                'valor': VALOR_MENSUALIDAD,
                 'mes_nombre': nombre_mes,
                 'anio': target_anio,
                 'mes': target_mes,
+                'monto': monto_val,
+                'valor_fmt': valor_fmt,
+                'dias_restantes': dias_restantes,
+                'dias_gabela': dias_gabela,
                 'whatsapp_url': whatsapp_url,
                 'approval_url': approval_url,
-                'nu_tag': '@QEI910',
-                'nequi': '3505422186'
+                'nu_llave': '@QEI910',
+                'nequi_num': '3505422186'
             }
 
             return {'pago_servidor': pago_servidor}
         except Exception:
             return {'pago_servidor': None}
 
-    @app.route('/servidor/confirmar-pago')
+    @app.route('/servidor/confirmar-pago', methods=['GET', 'POST'])
+    @csrf.exempt
     def confirmar_pago_servidor():
         from itsdangerous import URLSafeTimedSerializer
-
         from models import ServerPayment
-        token = request.args.get('token')
+
+        token = request.args.get('token') or request.form.get('token')
         if not token:
-            return render_template('servidor/pago_confirmado.html', exito=False, error="Token de confirmación no proporcionado.")
+            return render_template('servidor/pago_confirmado.html', exito=False, error="Token de confirmación no proporcionado."), 400
         
         s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
         try:
-            data = s.loads(token, salt='servidor-pago-salt')
+            data = s.loads(token, salt='server-payment-salt')
             anio = data.get('anio')
             mes = data.get('mes')
-            
-            pago = ServerPayment.query.filter_by(anio=anio, mes=mes).first()
-            if not pago:
-                pago = ServerPayment(anio=anio, mes=mes, estado='pagado', fecha_pago=obtener_hora_bogota())
-                db.session.add(pago)
-            else:
-                pago.estado = 'pagado'
-                pago.fecha_pago = obtener_hora_bogota()
-                
-            db.session.commit()
-            MESES = [
-                "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-            ]
-            nombre_mes = MESES[mes] if 1 <= mes <= 12 else str(mes)
-            return render_template('servidor/pago_confirmado.html', exito=True, mes_nombre=nombre_mes, anio=anio)
         except Exception:
-            return render_template('servidor/pago_confirmado.html', exito=False, error="El enlace de confirmación no es válido o ha expirado.")
+            return render_template('servidor/pago_confirmado.html', exito=False, error="El enlace de confirmación no es válido o ha expirado."), 400
+
+        MESES = [
+            "", "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+            "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        ]
+        nombre_mes = MESES[mes] if 1 <= mes <= 12 else str(mes)
+        
+        pago = ServerPayment.query.filter_by(anio=anio, mes=mes).first()
+
+        # Si el pago ya fue registrado previamente como 'pagado'
+        if pago and pago.estado == 'pagado':
+            return render_template('servidor/pago_confirmado.html', ya_pagado=True, exito=True, mes_nombre=nombre_mes, anio=anio)
+
+        # Si el pago está pendiente
+        if request.method == 'POST':
+            pin_ingresado = request.form.get('pin', '').strip()
+            pin_esperado = app.config.get('PIN_CONFIRMACION_SERVIDOR', '9876')
+            
+            if pin_ingresado == pin_esperado:
+                if not pago:
+                    pago = ServerPayment(anio=anio, mes=mes, estado='pagado', fecha_pago=obtener_hora_bogota())
+                    db.session.add(pago)
+                else:
+                    pago.estado = 'pagado'
+                    pago.fecha_pago = obtener_hora_bogota()
+                    
+                db.session.commit()
+                return render_template(
+                    'servidor/pago_confirmado.html',
+                    exito=True,
+                    confirmado=True,
+                    mes_nombre=nombre_mes,
+                    anio=anio,
+                    mensaje="¡Pago Confirmado! ✅ Alerta desactivada automáticamente en la aplicación"
+                )
+            else:
+                return render_template(
+                    'servidor/pago_confirmado.html',
+                    pedir_pin=True,
+                    error_pin="🚨 PIN de confirmación incorrecto. Inténtalo nuevamente.",
+                    token=token,
+                    mes_nombre=nombre_mes,
+                    anio=anio
+                )
+
+        # GET request: renderizar formulario de PIN
+        return render_template(
+            'servidor/pago_confirmado.html',
+            pedir_pin=True,
+            token=token,
+            mes_nombre=nombre_mes,
+            anio=anio
+        )
 
     from flask_login import login_required
 

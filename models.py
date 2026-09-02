@@ -542,14 +542,15 @@ class ServerPayment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     anio = db.Column(db.Integer, nullable=False)
     mes = db.Column(db.Integer, nullable=False)
-    estado = db.Column(db.String(20), nullable=False, default='pendiente') # 'pendiente' | 'pagado'
-    fecha_pago = db.Column(db.DateTime, nullable=True)
+    estado = db.Column(db.String(20), nullable=False, default='pagado') # 'pagado' | 'pendiente'
+    fecha_pago = db.Column(db.DateTime, default=obtener_hora_bogota)
+    observacion = db.Column(db.String(255), nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint('anio', 'mes', name='uq_server_payment_anio_mes'),
     )
 
-    def __init__(self, anio=None, mes=None, estado='pendiente', fecha_pago=None, **kwargs):
+    def __init__(self, anio=None, mes=None, estado='pagado', fecha_pago=None, observacion=None, **kwargs):
         super().__init__(**kwargs)
         if anio is not None:
             self.anio = anio
@@ -559,4 +560,9 @@ class ServerPayment(db.Model):
             self.estado = estado
         if fecha_pago is not None:
             self.fecha_pago = fecha_pago
+        else:
+            self.fecha_pago = obtener_hora_bogota()
+        if observacion is not None:
+            self.observacion = observacion
+
 
