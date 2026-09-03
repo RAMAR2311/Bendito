@@ -57,15 +57,28 @@
         color: #ffffff;
     }
     @media (max-width: 991.98px) {
+        .table-responsive {
+            overflow-x: hidden !important;
+        }
+        .table-custom th, .table-custom td {
+            padding: 0.5rem 0.25rem !important;
+            font-size: 0.76rem !important;
+        }
         .action-btn-group {
             flex-wrap: nowrap !important;
-            gap: 0.35rem !important;
+            gap: 0.2rem !important;
         }
         .action-btn {
-            width: 32px;
-            height: 32px;
-            font-size: 0.8rem;
+            width: 28px !important;
+            height: 28px !important;
+            font-size: 0.72rem !important;
         }
+        .th-costo::before { content: "COSTO"; font-size: 0.72rem; }
+        .th-costo-text { display: none; }
+        .th-minimo::before { content: "P. MÍNIMO"; font-size: 0.72rem; }
+        .th-minimo-text { display: none; }
+        .th-sugerido::before { content: "P. SUGERIDO"; font-size: 0.72rem; }
+        .th-sugerido-text { display: none; }
     }
 </style>
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -153,13 +166,13 @@
         <table class="table table-hover table-custom mb-0">
             <thead class="bg-tekfix-card">
                 <tr>
-                    <th width="120" class="ps-4">SKU</th>
-                    <th>PRODUCTO</th>
-                    <th width="150" class="text-center">STOCK</th>
-                    <th width="150" class="text-end">PRECIO COSTO</th>
-                    <th width="150" class="text-end">PRECIO MÍNIMO</th>
-                    <th width="150" class="text-end pe-4">PRECIO SUGERIDO</th>
-                    <th width="140" class="text-center">ACCIONES</th>
+                    <th class="ps-2 ps-md-4" style="width: 11%;">SKU</th>
+                    <th style="width: 27%;">PRODUCTO</th>
+                    <th class="text-center" style="width: 12%;">STOCK</th>
+                    <th class="text-end" style="width: 13%;"><span class="th-costo"><span class="th-costo-text">PRECIO COSTO</span></span></th>
+                    <th class="text-end" style="width: 13%;"><span class="th-minimo"><span class="th-minimo-text">PRECIO MÍNIMO</span></span></th>
+                    <th class="text-end pe-2 pe-md-4" style="width: 14%;"><span class="th-sugerido"><span class="th-sugerido-text">PRECIO SUGERIDO</span></span></th>
+                    <th class="text-center" style="width: 10%;">ACCIONES</th>
                 </tr>
             </thead>
             <tbody>
