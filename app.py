@@ -24,6 +24,12 @@ def create_app():
     Migrate(app, db)
     csrf = CSRFProtect(app)
     
+    with app.app_context():
+        try:
+            db.create_all()
+        except Exception as e:
+            app.logger.warning(f"Advertencia al verificar tablas: {e}")
+    
     login_manager = LoginManager()
     login_manager.login_view = 'auth_bp.login'
     login_manager.init_app(app)
@@ -75,7 +81,12 @@ def create_app():
             from datetime import date
             from urllib.parse import quote
             from itsdangerous import URLSafeTimedSerializer
-            from models import ServerPayment
+            from models import ServerPayment, db
+
+            try:
+                db.create_all()
+            except Exception:
+                pass
 
             monto_val = app.config.get('VALOR_MENSUALIDAD_SERVIDOR', '60.000')
             valor_fmt = f"${monto_val} COP"

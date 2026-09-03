@@ -285,7 +285,7 @@
             </div>
 
             <!-- Cápsula / Indicador del Servidor Zenic (Derecha) -->
-            {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor %}
+            {% if current_user.is_authenticated and current_user.rol|lower in ['admin', 'administrador'] and pago_servidor %}
                 <div>
                     {% if pago_servidor.estado in ['al_dia', 'pagado'] %}
                         <button type="button" class="btn btn-sm rounded-pill px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#modalPagoServidor" style="font-size: 0.8rem; background-color: #e6f4ea; border: 1px solid #0f5132; color: #0f5132;">
@@ -327,7 +327,7 @@
         </div>
         <div class="offcanvas-body d-flex flex-column p-0">
             <ul class="navbar-nav w-100 mb-auto px-3 py-3 gap-2">
-                {% if current_user.rol == 'admin' %}
+                {% if current_user.rol|lower in ['admin', 'administrador'] %}
                     <!-- Enlaces Únicos para el Administrador de la Tienda -->
                     <li class="nav-item">
                         <a class="nav-link text-tekfix-main rounded-3 px-3 py-2 fw-semibold border-bottom" href="/admin/dashboard"><i class="fa-solid fa-chart-pie me-2" style="width:20px; text-align:center; color: var(--tekfix-primary);"></i> Dashboard</a>
@@ -426,7 +426,7 @@
         {% endwith %}
 
         <!-- Banners de Alerta según el Estado del Pago del Servidor (Exclusivo Administradores) -->
-        {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor and pago_servidor.estado in ['preventivo', 'hoy', 'gabela', 'vencido'] %}
+        {% if current_user.is_authenticated and current_user.rol|lower in ['admin', 'administrador'] and pago_servidor and pago_servidor.estado in ['preventivo', 'hoy', 'gabela', 'vencido'] %}
             {% if pago_servidor.estado == 'preventivo' %}
                 <div class="alert alert-warning border-0 shadow-sm rounded-3 d-flex align-items-center justify-content-between p-3 mb-4">
                     <div class="d-flex align-items-center">
@@ -516,7 +516,7 @@
             });
         });
     </script>
-    {% if current_user.is_authenticated and current_user.rol == 'admin' and pago_servidor %}
+    {% if current_user.is_authenticated and current_user.rol|lower in ['admin', 'administrador'] and pago_servidor %}
     <!-- Modal de Medios de Pago (#modalPagoServidor) -->
     <div class="modal fade" id="modalPagoServidor" tabindex="-1" aria-labelledby="modalPagoServidorLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
