@@ -34,16 +34,17 @@ def validate_prices(*prices):
 @admin_or_bodega_required
 def index():
     tipo = 'bodega' if current_user.rol == 'bodega' else 'tienda'
-    productos = Product.query.filter_by(tipo_inventario=tipo).order_by(Product.nombre).all()
+    productos = Product.query.filter_by(tipo_inventario=tipo, activo=True).order_by(Product.nombre).all()
     
     total_unidades = 0
     valor_total_costo = 0.0
     valor_total_venta = 0.0
     
     for p in productos:
-        # Calcular sumatorias para productos con variantes
-        if p.variantes:
-            for v in p.variantes:
+        # Calcular sumatorias para productos con variantes activas
+        variantes_activas = [v for v in p.variantes if v.activo]
+        if variantes_activas:
+            for v in variantes_activas:
                 total_unidades += v.cantidad_stock
                 valor_total_costo += (v.cantidad_stock * float(v.precio_costo or p.precio_costo))
                 valor_total_venta += (v.cantidad_stock * float(v.precio_sugerido or p.precio_sugerido))
@@ -207,40 +208,26 @@ def ver_producto(id):
 @login_required
 @admin_or_bodega_required
 def eliminar_producto(id):
-    producto = Product.query.get_or_404(id)
-    tipo = 'bodega' if current_user.rol == 'bodega' else 'tienda'
+    producto = db.session.get(Product, id)
+    if not producto or not producto.activo:
+        flash('El producto ya ha sido removido del inventario.', 'info')
+        return redirect(url_for('inventory_bp.index'))
     
-    if producto.tipo_inventario != tipo:
-        abort(403)
-        
-    from models import FacturaBodegaDetalle, Maneo, SaleDetail
-    
-    # 1. Validación de seguridad en cascada (No eliminar lo que tiene historia financiera/logística)
-    if SaleDetail.query.filter_by(product_id=producto.id).first():
-        flash('Acción denegada: El producto ya está vinculado a Historial de Ventas. Sugerencia: Ajustar stock a 0.', 'warning')
-        return redirect(url_for('inventory_bp.index'))
-        
-    if Maneo.query.filter_by(product_id=producto.id).first():
-        flash('Acción denegada: El producto tiene registros históticos en Maneos (Préstamos).', 'warning')
-        return redirect(url_for('inventory_bp.index'))
-        
-    if FacturaBodegaDetalle.query.filter_by(producto_id=producto.id).first():
-        flash('Acción denegada: El producto forma parte del detalle de una Factura Asignada.', 'warning')
-        return redirect(url_for('inventory_bp.index'))
-        
-    try:
-        # 2. Purgar dependencias suaves (Ajustes de Kardex)
-        for ajuste in producto.ajustes_stock:
-            db.session.delete(ajuste)
+    if current_user.rol != 'admin':
+        tipo = 'bodega' if current_user.rol == 'bodega' else 'tienda'
+        if producto.tipo_inventario != tipo:
+            abort(403)
             
-        # 3. Eliminar el producto madre (las Variantes se van automáticamente por regla delete-orphan de SQLAlchemy)
+    try:
         nombre = producto.nombre
-        db.session.delete(producto)
+        producto.activo = False
+        for v in producto.variantes:
+            v.activo = False
         db.session.commit()
-        flash(f'Producto "{nombre}" fue borrado permanentemente del inventario.', 'success')
+        flash(f'Producto "{nombre}" fue removido del inventario activo (conservando todo su historial contable y de ventas).', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Ocurrió un error bloqueante en la base de datos: {e!s}', 'danger')
+        flash(f'Ocurrió un error al remover el producto: {e!s}', 'danger')
         
     return redirect(url_for('inventory_bp.index'))
 
@@ -325,22 +312,18 @@ def editar_variante(id):
 @login_required
 @admin_or_bodega_required
 def eliminar_variante(id):
-    variante = ProductVariant.query.get_or_404(id)
-    
-    from models import SaleDetail
-    # Validar si ya hay ventas facturadas con esta variante para evitar conflictos en el Balance Financiero
-    if SaleDetail.query.filter_by(variant_id=variante.id).first():
-        flash('Acción denegada: No se puede eliminar una variante que tiene ventas facturadas (por integridad financiera). Sugerencia: Actualiza su stock a 0.', 'warning')
+    variante = db.session.get(ProductVariant, id)
+    if not variante or not variante.activo:
+        flash('La subcategoría ya ha sido removida del inventario.', 'info')
         return redirect(url_for('inventory_bp.index'))
-        
     try:
         nombre = variante.nombre_variante
-        db.session.delete(variante)
+        variante.activo = False
         db.session.commit()
-        flash(f'La subcategoría "{nombre}" fue borrada exitosamente.', 'success')
+        flash(f'La subcategoría "{nombre}" fue removida del inventario activo (conservando su historial).', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error grave en servidor al eliminar la variante: {e!s}', 'danger')
+        flash(f'Error al remover la variante: {e!s}', 'danger')
         
     return redirect(url_for('inventory_bp.index'))
 

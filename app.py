@@ -17,7 +17,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:postgres@localhost/benditoencanto')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    app.config['VALOR_MENSUALIDAD_SERVIDOR'] = os.getenv('VALOR_MENSUALIDAD_SERVIDOR', '70.000')
+    app.config['VALOR_MENSUALIDAD_SERVIDOR'] = os.getenv('VALOR_MENSUALIDAD_SERVIDOR', '60.000')
     app.config['PIN_CONFIRMACION_SERVIDOR'] = os.getenv('PIN_CONFIRMACION_SERVIDOR', '9876')
 
     db.init_app(app)
@@ -77,7 +77,7 @@ def create_app():
             from itsdangerous import URLSafeTimedSerializer
             from models import ServerPayment
 
-            monto_val = app.config.get('VALOR_MENSUALIDAD_SERVIDOR', '70.000')
+            monto_val = app.config.get('VALOR_MENSUALIDAD_SERVIDOR', '60.000')
             valor_fmt = f"${monto_val} COP"
             
             MESES = [

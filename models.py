@@ -55,6 +55,7 @@ class Product(db.Model):
     imagen = db.Column(db.String(255), nullable=True) # Nombre de la foto subida
     observacion = db.Column(db.Text, nullable=True) # Nota descriptiva
     fecha_creacion = db.Column(db.DateTime, default=obtener_hora_bogota)
+    activo = db.Column(db.Boolean, default=True, nullable=False, server_default='1')
     
     detalles_venta = db.relationship('SaleDetail', backref='producto', lazy=True)
     ajustes_stock = db.relationship('StockAdjustment', backref='producto_rel', lazy=True)
@@ -62,15 +63,17 @@ class Product(db.Model):
 
     @property
     def total_stock(self):
-        if self.variantes:
-            return sum(v.cantidad_stock for v in self.variantes)
+        variantes_activas = [v for v in self.variantes if v.activo]
+        if variantes_activas:
+            return sum(v.cantidad_stock for v in variantes_activas)
         return self.cantidad_stock
 
     @property
     def rango_precios(self):
-        if not self.variantes:
+        variantes_activas = [v for v in self.variantes if v.activo]
+        if not variantes_activas:
             return None
-        precios = [v.precio_sugerido for v in self.variantes]
+        precios = [v.precio_sugerido for v in variantes_activas if v.precio_sugerido is not None]
         if not precios:
             return None
         min_p = min(precios)
@@ -91,6 +94,7 @@ class ProductVariant(db.Model):
     precio_costo = db.Column(db.Numeric(14, 2), nullable=True) 
     precio_minimo = db.Column(db.Numeric(14, 2), nullable=True)
     precio_sugerido = db.Column(db.Numeric(14, 2), nullable=True)
+    activo = db.Column(db.Boolean, default=True, nullable=False, server_default='1')
 
 class Loss(db.Model):
     __tablename__ = 'losses'
