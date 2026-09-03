@@ -1,6 +1,73 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        border-radius: 50% !important;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid transparent;
+        text-decoration: none !important;
+        cursor: pointer;
+    }
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+    }
+    .action-btn-variantes {
+        background-color: rgba(79, 70, 229, 0.12);
+        color: #4f46e5;
+        border-color: rgba(79, 70, 229, 0.25);
+    }
+    .action-btn-variantes:hover {
+        background-color: #4f46e5;
+        color: #ffffff;
+    }
+    .action-btn-ver {
+        background-color: rgba(2, 132, 199, 0.12);
+        color: #0284c7;
+        border-color: rgba(2, 132, 199, 0.25);
+    }
+    .action-btn-ver:hover {
+        background-color: #0284c7;
+        color: #ffffff;
+    }
+    .action-btn-editar {
+        background-color: rgba(217, 119, 6, 0.12);
+        color: #d97706;
+        border-color: rgba(217, 119, 6, 0.25);
+    }
+    .action-btn-editar:hover {
+        background-color: #d97706;
+        color: #ffffff;
+    }
+    .action-btn-eliminar {
+        background-color: rgba(225, 29, 72, 0.12);
+        color: #e11d48;
+        border-color: rgba(225, 29, 72, 0.25);
+    }
+    .action-btn-eliminar:hover {
+        background-color: #e11d48;
+        color: #ffffff;
+    }
+    @media (max-width: 991.98px) {
+        .action-btn-group {
+            flex-wrap: nowrap !important;
+            gap: 0.35rem !important;
+        }
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            font-size: 0.8rem;
+        }
+    }
+</style>
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2 class="fw-bold text-tekfix-main m-0">Inventario Central</h2>
     <div class="d-flex gap-2">
@@ -140,23 +207,24 @@
                             ${{ (p.precio_sugerido)|cop }}
                         {% endif %}
                     </td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-outline-primary rounded-pill hover-primary me-1" title="Gestionar Variantes" data-bs-toggle="modal" data-bs-target="#variantesModal{{ p.id }}">
-                            <i class="fa-solid fa-layer-group"></i>
-                        </button>
-                        <a href="{{ url_for('inventory_bp.ver_producto', id=p.id) }}" class="btn btn-sm btn-outline-info rounded-pill hover-primary me-1" title="Ver Detalle">
-                            <i class="fa-solid fa-eye"></i>
-                        </a>
-                        <!-- Enlace dinámico con ID insertado (Jinja2 url_for) -->
-                        <a href="{{ url_for('inventory_bp.editar_producto', id=p.id) }}" class="btn btn-sm text-secondary hover-primary me-1" title="Editar">
-                            <i class="fa-solid fa-pen"></i>
-                        </a>
-                        <form method="POST" action="{{ url_for('inventory_bp.eliminar_producto', id=p.id) }}" class="d-inline" onsubmit="return confirm('ATENCIÓN: ¿Está seguro de que desea ELIMINAR PERMANENTEMENTE este producto del sistema en la Nube? Esto no se puede deshacer.');">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm text-danger hover-danger" title="Eliminar Producto">
-                                <i class="fa-solid fa-trash-can"></i>
+                    <td class="text-center align-middle text-nowrap">
+                        <div class="d-inline-flex align-items-center justify-content-center gap-1 action-btn-group">
+                            <button type="button" class="action-btn action-btn-variantes" title="Gestionar Subcategorías / Variantes" data-bs-toggle="modal" data-bs-target="#variantesModal{{ p.id }}">
+                                <i class="fa-solid fa-layer-group"></i>
                             </button>
-                        </form>
+                            <a href="{{ url_for('inventory_bp.ver_producto', id=p.id) }}" class="action-btn action-btn-ver" title="Ver Detalle">
+                                <i class="fa-solid fa-eye"></i>
+                            </a>
+                            <a href="{{ url_for('inventory_bp.editar_producto', id=p.id) }}" class="action-btn action-btn-editar" title="Editar Producto">
+                                <i class="fa-solid fa-pen"></i>
+                            </a>
+                            <form method="POST" action="{{ url_for('inventory_bp.eliminar_producto', id=p.id) }}" class="d-inline m-0 p-0" onsubmit="return confirm('ATENCIÓN: ¿Desea remover este producto del inventario activo? (Se conservará todo su historial contable)');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="action-btn action-btn-eliminar" title="Eliminar Producto">
+                                    <i class="fa-solid fa-trash-can"></i>
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% else %}
@@ -283,7 +351,7 @@
                                     </div>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center mt-3 pt-2">
-                                    <button type="button" class="btn btn-sm btn-outline-light border-0 hover-danger px-2" title="Eliminar Permanente" onclick="if(confirm('¿Eliminar la subcategoría {{ v.nombre_variante }} del inventario? Esta acción es irreversible.')) { document.getElementById('delVarForm{{ v.id }}').submit(); }">
+                                    <button type="button" class="action-btn action-btn-eliminar" title="Eliminar Subcategoría" onclick="if(confirm('¿Eliminar la subcategoría {{ v.nombre_variante }} del inventario?')) { document.getElementById('delVarForm{{ v.id }}').submit(); }">
                                         <i class="fa-solid fa-trash-can"></i>
                                     </button>
                                     <button type="submit" class="btn btn-sm btn-outline-primary rounded-pill px-4" title="Guardar Cambios">
